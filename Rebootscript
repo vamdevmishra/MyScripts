@@ -37,6 +37,10 @@ Catch
 $report | Export-csv C:\Users\vamishr\Desktop\Reboot.csv -NoTypeInformation
 
 #Sending the email
+
+$emailSmtpUser = "user"
+$emailSmtpPass = "P@ssw0rd"
+$Cred = New-Object System.Net.NetworkCredential( $emailSmtpUser , $emailSmtpPass );
 Send-MailMessage -From 'noreply@anz.com' -To 'serveradmin@anz.com' `
  -Subject 'Last Reboot of Servers' -Body "Hi team, Please find the attached list of lastreboot of the servers, please take action on the servers which are Not Reachable" `
- -Attachments "C:\Users\vamishr\Desktop\Reboot.csv" -Priority High -SmtpServer 'smtp.anz.com'
+ -Attachments "C:\Users\vamishr\Desktop\Reboot.csv"  -SmtpServer 'smtp.anz.com' -Credential $cred
