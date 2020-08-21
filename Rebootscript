@@ -3,7 +3,7 @@
 # Version 1.0
 # 
 
-$computers = Get-Content C:\users\<username>\desktop\Machine_List.txt
+$computers = [Environment]::GetFolderPath("Desktop")+'\Machine_List.txt'
 $report = @()
 foreach($computer in $computers)
 {
@@ -34,7 +34,7 @@ Catch
  $report += $object
 }
 #$Exporting the CSV File 
-$report | Export-csv C:\Users\<username>\Desktop\Reboot.csv -NoTypeInformation
+$report | Export-csv  [Environment]::GetFolderPath("Desktop")+'\Reboot.csv' -NoTypeInformation
 
 #Sending the email
 
@@ -43,4 +43,4 @@ $emailSmtpPass = "P@ssw0rd"
 $Cred = New-Object System.Net.NetworkCredential( $emailSmtpUser , $emailSmtpPass );
 Send-MailMessage -From 'noreply@abc.com' -To 'serveradmin@abc.com' `
  -Subject 'Last Reboot of Servers' -Body "Hi team, Please find the attached list of lastreboot of the servers, please take action on the servers which are Not Reachable" `
- -Attachments "C:\Users\vamishr\Desktop\Reboot.csv"  -SmtpServer 'smtp.abc.com' -Credential $cred
+ -Attachments [Environment]::GetFolderPath("Desktop")+'\Reboot.csv'  -SmtpServer 'smtp.abc.com' -Credential $cred
