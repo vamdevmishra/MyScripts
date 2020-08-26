@@ -6,7 +6,7 @@
    For more information visit https://docs.microsoft.com/en-us/powershell/module/az.compute/get-azvm?view=azps-4.6.0
 .EXAMPLE
    Get-AZVMBootTime -Name Windows10 -ResourceGroupName az104
-   Get-AzVM | %{Get-AZVMBootTime -ResourceGroupName $_.ResourceGroupName -name $_.name}
+   Get-AzVM | %{Get-AZVMBootTime -ResourceGroupName $_.ResourceGroupName -name $_.name} |ft
 .
 #>
 function Get-AZVMBootTime
@@ -31,15 +31,25 @@ function Get-AZVMBootTime
 
     Process
     {
-    $BootTime=((Get-AzVM -ResourceGroupName $ResourceGroupName -Name $Name -Status).statuses[0].Time)
-    #$uptime = (NEW-TIMESPAN –Start (get-date) –End ($BootTime)).AddHours(5.5)
+    $vm=Get-AzVM -ResourceGroupName $ResourceGroupName -Name $Name -Status
+    if($vm.Statuses[1].DisplayStatus -eq "VM deallocated" )
+    {
+    $uptime = "Not Applicable"
+    }
+    else
+    {
+    $uptime = (New-Timespan –Start (($vm.statuses[0].Time).AddHours(5.5)) –End (get-date)).minutes
+    }
 
                 $Properties =      @{Name  = $Name
-                                    BootTime = $BootTime
-                                    #Uptime  = $uptime
+                                    OsName =$vm.OsName
+                                    ResourceGroupName =$vm.ResourceGroupName
+                                    VMStatus =$vm.Statuses[1].DisplayStatus
+                                    BootTime  = $vm.statuses[0].Time
+                                    UPtime_Minutes = $uptime
                                     }
                               
-                $Object = New-Object -TypeName PSObject -Property $Properties | Select Name,BootTime
+                $Object = New-Object -TypeName PSObject -Property $Properties | Select Name,OsName,Resourcegroupname,vmstatus,boottime,uptime_minutes 
                 $Object
     }
 
