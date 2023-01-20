@@ -1,4 +1,4 @@
-﻿<#
+<#
 .Synopsis
    Short description
 .DESCRIPTION
@@ -325,6 +325,7 @@ function Copy-ADOUPermissions
           #$csvlocation=Read-Host "enter the csv fle location"
           #$csvcontent=Import-Csv $csvlocation  
           $csvcontent= import-csv $csvfile | ? {$_.identityreference -eq $IdentityReference}
+          Write-Host "total permissions needs to be assigned are -> $(($csvcontent).count)" -ForegroundColor Green
           $targetOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $TargetOUDN}).Distinguishedname
           $targetouacls=Get-Acl -Path "AD:$targetOUDNPath"
           Write-Host "total count of permissions before adding new permissions are $(($targetouacls.Access).count)" -ForegroundColor Green
