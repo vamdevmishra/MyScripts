@@ -6,9 +6,11 @@
    first take the permission dump from source domain using below command
    (Get-Acl -Path "AD:OU=TestOU,DC=Contoso,DC=com").access  | Export-Csv C:\Temp\OUACLs.csv -NoTypeInformation and then pass this file as a input in target domain.
 .EXAMPLE
-   Copy-ADOUPermissions -SourceOUName testou -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com" -IdentityReference 'contoso\cisspuser' -RemoteDomainorForest $false
+#For same domain 
+Copy-ADOUPermissions -SourceOUDN "OU=testou,DC=contoso,DC=com"  -TargetOUDN "OU=gpuri,DC=contoso,DC=com" -IdentityReference 'contoso\cisspuser' -RemoteDomainorForest $false
 .EXAMPLE
-   Copy-ADOUPermissions -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com" -IdentityReference 'Contoso\cisspuser' -csvfile  C:\Temp\OUACLs.csv -InputthroughCSV $true
+#to update permission through csv
+Copy-ADOUPermissions -TargetOUDN "OU=gpuri,DC=contoso,DC=com" -IdentityReference 'Contoso\cisspuser' -csvfile  C:\Temp\OUACLs.csv -InputthroughCSV $true
 .EXAMPLE
   Copy-ADOUPermissions -SourceOUName testou -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com"  -RemoteDomainorForest $true -IdentityReference 'contoso\cisspuser' -TargetDomain 'fabrikam.com'
 #>
@@ -163,9 +165,10 @@ function Copy-ADOUPermissions
 
           $SourceOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $SourceOUDN}).Distinguishedname
 
-          $targetOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $TargetOUDN}-Server $targetdomain).Distinguishedname
-          New-PSDrive -Name AD2 -PSProvider ActiveDirectory -Server $TargetDomain -root "//RootDSE/"  | Out-Null
-          $targetouacls=Get-Acl -Path "AD2:$targetOUDNPath"
+          $targetOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $TargetOUDN} -Server $targetdomain).Distinguishedname
+          #New-PSDrive -Name AD2 -PSProvider ActiveDirectory -Server $TargetDomain -root "//RootDSE/"  | Out-Null
+          $targetouacls=Invoke-Command -ComputerName 'fabrikamdc01.fabrikam.com' -Credential $cred -ArgumentList $targetOUDNPath `
+          -ScriptBlock {Import-module activedirectory; Get-Acl -Path "AD:$($targetOUDNPath)"}
           #Write-Host "target OU acls to assign is as below before making the permission" -ForegroundColor Green
           #$targetouacls.Access | ft 
           
@@ -198,10 +201,10 @@ function Copy-ADOUPermissions
                     Try
                        {
                          #Write-Host $targetOUDNPath -ForegroundColor Green
-                         #$targetouacls.Access | ?{$_.identityreference -eq "fabrikam\cisspuser"}  | select identityreference, activedirectoryrights | ft
-                         #$targetouacls
-                         Invoke-Command -ComputerName 'fabrikamdc01.fabrikam.com' -Credential $cred -ArgumentList $targetouacls `
-                          {Set-Acl -Path "OU=UNIX,DC=fabrikam,DC=com" -AclObject $targetouacls -Verbose -ErrorAction Stop}
+                         $targetouacls.Access | ?{$_.identityreference -eq "fabrikam\cisspuser"}  | select identityreference, activedirectoryrights | ft
+                         #$targetouacls.Access | ?{$_.identityreference
+                         Invoke-Command -ComputerName 'fabrikamdc01.fabrikam.com' -Credential $cred  `
+                          {Set-Acl -Path "OU=UNIX,DC=fabrikam,DC=com" -AclObject $using:targetouacls -Verbose -ErrorAction Stop}
                            Write-Host "permission assigned successfully" -ForegroundColor Green
                        }
                     Catch
@@ -259,13 +262,16 @@ function Copy-ADOUPermissions
               $sourceOUacls= ((Get-ACL -Path "AD:$($SourceOUDNPath)" -ErrorAction Stop)).Access `
               | ?{$_.identityreference -eq $IdentityReference}
 
+               Write-Host "total count of permissions to be added are $($sourceOUacls.count)" -ForegroundColor Green
+               Write-Host "total count of permissions before adding new permissions are $(($targetouacls.Access).count)" -ForegroundColor Green
+
               $identity = New-Object System.Security.Principal.NTAccount($IdentityReference)
               foreach($acl in $sourceOUacls)
                 {
        
                     $assignpermissionguid= [GUID] $acl.ObjectType.Guid
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($identity,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType)
+                    ($identity,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType)
                     $targetouacls.AddAccessRule($customacl)
 
                     #Write-Host "target OU acls to assign is as below" -ForegroundColor Green
@@ -317,6 +323,9 @@ function Copy-ADOUPermissions
          {
           Write-Host "couldn't fetch sourceoudnpath or targetoudnpath, skipping adding custom ACLs" -ForegroundColor Red
          }
+                         $targetouacls=Get-Acl -Path "AD:$targetOUDNPath"
+                        Write-Host "total count of permissions after adding new permissions are $(($targetouacls.Access).count)" -ForegroundColor Green
+
 
          }#elsenootremotedomainorforest
 
@@ -329,8 +338,7 @@ function Copy-ADOUPermissions
           $targetOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $TargetOUDN}).Distinguishedname
           $targetouacls=Get-Acl -Path "AD:$targetOUDNPath"
           Write-Host "total count of permissions before adding new permissions are $(($targetouacls.Access).count)" -ForegroundColor Green
-          #$SourceOUDNPath = (Get-ADOrganizationalUnit -Filter {Distinguishedname -eq $SourceOUDN}).Distinguishedname
-        
+             
         if($targetOUDNPath -and $csvcontent)
         {
           if($IdentityReference)
@@ -346,7 +354,7 @@ function Copy-ADOUPermissions
        
                     $assignpermissionguid= [GUID] $acl.ObjectType
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($object ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType)
+                    ($object ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType)
                     $targetouacls.AddAccessRule($customacl)
 
                }
