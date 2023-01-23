@@ -14,6 +14,7 @@ Copy-ADOUPermissions -TargetOUDN "OU=gpuri,DC=contoso,DC=com" -IdentityReference
 .EXAMPLE
   Copy-ADOUPermissions -SourceOUName testou -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com"  -RemoteDomainorForest $true -IdentityReference 'contoso\cisspuser' -TargetDomain 'fabrikam.com'
 #>
+
 function Copy-ADOUPermissions
 {
     [CmdletBinding()]
@@ -188,7 +189,7 @@ function Copy-ADOUPermissions
        
                     $assignpermissionguid= [GUID] $acl.ObjectType.Guid
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType)
+                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType)
                     #Write-Host "custom acls as below" -ForegroundColor Green
                     #$customacl
                     $targetouacls.AddAccessRule($customacl)
@@ -223,7 +224,7 @@ function Copy-ADOUPermissions
        
                     $assignpermissionguid= [GUID] $acl.ObjectType.Guid
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType) -ErrorAction Stop
+                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType) -ErrorAction Stop
                     $targetouacls.AddAccessRule($customacl)
 
                }
@@ -300,7 +301,7 @@ function Copy-ADOUPermissions
                     $Identity=New-Object System.Security.Principal.NTAccount($acl.IdentityReference)
                     $assignpermissionguid= [GUID] $acl.ObjectType.Guid
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($Identity,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType)
+                    ($Identity,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType)
                     #$customacl
                     $targetouacls.AddAccessRule($customacl)
 
@@ -383,7 +384,7 @@ function Copy-ADOUPermissions
        
                     $assignpermissionguid= [GUID] $acl.ObjectType.Guid
                     $customacl= New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType)
+                    ($Identity ,$acl.ActiveDirectoryRights, $acl.AccessControlType, $assignpermissionguid,$acl.InheritanceType, $acl.inheritedObjectType)
                     $targetouacls.AddAccessRule($customacl)
 
                }
