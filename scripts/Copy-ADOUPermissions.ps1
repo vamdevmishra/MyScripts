@@ -12,7 +12,10 @@ Copy-ADOUPermissions -SourceOUDN "OU=testou,DC=contoso,DC=com"  -TargetOUDN "OU=
 #to update permission through csv
 Copy-ADOUPermissions -TargetOUDN "OU=gpuri,DC=contoso,DC=com" -IdentityReference 'Contoso\cisspuser' -csvfile  C:\Temp\OUACLs.csv -InputthroughCSV $true
 .EXAMPLE
-  Copy-ADOUPermissions -SourceOUName testou -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com"  -RemoteDomainorForest $true -IdentityReference 'contoso\cisspuser' -TargetDomain 'fabrikam.com'
+ Copy-ADOUPermissions -SourceOUName testou -TargetOUDN "OU=West Zone,DC=fabrikam,DC=com"  -RemoteDomainorForest $true -IdentityReference 'contoso\cisspuser' -TargetDomain 'fabrikam.com'
+.EXAMPLE
+Copy-ADOUPermissions -TargetOUDN "OU=gpuri,DC=contoso,DC=com" -IdentityReference 'Contoso\cisspuser' -csvfile  C:\Temp\OUACLs.csv -InputthroughCSV $true -TargetUserorGroup "vamishr-t0"
+
 #>
 
 function Copy-ADOUPermissions
@@ -49,7 +52,11 @@ function Copy-ADOUPermissions
 
         [Parameter(Mandatory=$false,        
                    Position=6)]
-        $csvfile
+        $csvfile,
+
+        [Parameter(Mandatory=$false,        
+                   Position=7)]
+        $TargetUserorGroup
 
     )
 
@@ -344,10 +351,18 @@ function Copy-ADOUPermissions
         {
           if($IdentityReference)
               {
+                 
+                 if($TargetUserorGroup)
+                     {
+                      $useraccount=$TargetUserorGroup
+                      $object = New-object System.Security.Principal.NTAccount($useraccount)
+                     }
 
-                 $useraccount=$IdentityReference.Split("\")[1]
-                 $object = New-object System.Security.Principal.NTAccount($useraccount)
-
+                else
+                    {
+                     $useraccount=$IdentityReference.Split("\")[1]
+                     $object = New-object System.Security.Principal.NTAccount($useraccount)
+                    }
               
               foreach($acl in $csvcontent)
                 {
