@@ -24,4 +24,4 @@ foreach($gpo in $allgpos)
 
  }
 
- $report | Export-Csv -NoTypeInformation gpoperm.csv
+ $report | Export-Csv -NoTypeInformation C:\temp\gpopermreport.csv
