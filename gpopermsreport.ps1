@@ -1,4 +1,4 @@
-﻿$report = @()
+$report = @()
 $allgpos=Get-GPO -All
 foreach($gpo in $allgpos)
  {
@@ -9,10 +9,11 @@ foreach($gpo in $allgpos)
     $gpoperms=@()
     foreach($gpopermission in $gpopermissions)
     {
+     if($gpopermission.Trustee.sidtype -eq "WellKnownGroup") {$TrusteeType="Group"} else {$TrusteeType=$gpopermission.Trustee.sidtype}
       $object = [PSCustomObject]@{
         GPOName = $gpo.DisplayName
         Trustee = $gpopermission.Trustee.Name
-        TrusteeType=$gpopermission.Trustee.sidtype
+        TrusteeType=$TrusteeType
         Permission=$gpopermission.Permission
         Inherited=$gpopermission.Inherited
         }
@@ -23,5 +24,5 @@ foreach($gpo in $allgpos)
   $report+=$gpoperms
 
  }
-
- $report | Export-Csv -NoTypeInformation C:\temp\gpopermreport.csv
+ 
+ $report | Export-Csv -NoTypeInformation gpoperm.csv
